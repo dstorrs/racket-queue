@@ -1,7 +1,7 @@
 queue
 =====
 
-A Racket package for functional FIFO queues.
+A Racket package for functional FIFO queues.  Amortized O(1) for insert and removal.
 
 NB:  This module is for regular Racket.  For *Typed* Racket, https://docs.racket-lang.org/functional-data-structures/Queues.html may or may not be better for your needs.
 
