@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require struct-plus-plus racket/contract racket/match)
+(require struct-plus-plus racket/contract racket/match racket/format racket/function)
 
 (provide make-queue
          queue?
@@ -58,6 +58,14 @@
             #:next-id next-id
             #:items   (hash-remove (queue.items q) head-id))))
 
+;;----------------------------------------------------------------------
+
+(define/contract (queue-member? q val #:key [key identity] #:equal [comparator equal?])
+  (->* (queue? any/c)
+       (#:key (-> any/c any/c) #:equal (-> any/c any/c any/c))
+       boolean?)
+  (for/or ([item (in-list (hash-values (queue.items q)))])
+    (comparator val (key item))))
 
 ;;----------------------------------------------------------------------
 ;;----------------------------------------------------------------------
@@ -80,7 +88,7 @@
    (let loop ([num     5]
               [correct 1]
               [q       (queue-add* (make-queue) 1 2 3 4 5)])
-     
+
      (is (queue-count q)
          num
          (format "queue-remove: as expected, on loop iteration #~a we had ~a entries"
@@ -90,6 +98,26 @@
      (when (not (zero? num))
        (define-values  (elem new-q) (queue-remove q))
        (is elem correct "got the expected element")
-       (loop (sub1 num) (add1 correct) new-q))))
+       (loop (sub1 num) (add1 correct) new-q)))
+   )
 
+  (test-suite
+   "queue-member?"
+
+   (define q (queue-add* (make-queue) 1 2 3 4 5))
+
+   (ok (queue-member? q 5) "(queue-member? q 5) is true")
+   (is-false (queue-member? q 16) "(queue-member? q 16) is false, as expected")
+
+   (define q2 (queue-add* (make-queue) (hash 'a 1 'b 2)  (hash 'a 7 'c 3 'd 4)))
+   (ok (queue-member? q2 7 #:key (curryr hash-ref 'a #f))
+       "(queue-member? q2 7 #:key (curryr hash-ref 'a #f)) is true")
+   (is-false (queue-member? q2 7 #:key (curryr hash-ref 'apple #f))
+             "(queue-member? q2 7 #:key (curryr hash-ref 'apple #f)) is false, as expected")
+
+   (struct thingy (id color))
+   (define q3 (queue-add* (make-queue) (thingy '(j) 'purple) (thingy '(a b c) 'red)))
+   (ok (queue-member? q3 3 #:key (compose1 length thingy-id) #:equal eq?)
+       "(queue-member? q3 3 #:key (compose1 length thingy-id) #:equal eq?)")
+   )
   )
