@@ -10,11 +10,13 @@
          queue-add*
          queue-remove
          queue-member?
+         queue.id
          )
 
-(struct++ queue ([(head-id 0)    natural-number/c]
-                 [(next-id 0)    natural-number/c]
-                 [(items (hash)) hash?]))
+(struct++ queue ([(id (gensym "queue-")) symbol?]
+                 [(head-id 0)            natural-number/c]
+                 [(next-id 0)            natural-number/c]
+                 [(items (hash))         hash?]))
 
 (define (make-queue) (queue++))
 
@@ -34,7 +36,10 @@
   (->* (queue?) () #:rest (listof any/c) queue?)
   (for/fold ([q q])
             ([item items])
-    (match-define (struct queue (head-id next-id items)) q)
+    (match-define (struct* queue ([head-id head-id]
+                                  [next-id next-id]
+                                  [items items]))
+      q)
     (queue++ #:head-id head-id
              #:next-id (add1 next-id)
              #:items   (hash-set items next-id item))))
@@ -53,7 +58,10 @@
        #:post (q) (<= (queue.head-id q) (queue.next-id q))
        )
 
-  (match-define (struct queue (head-id next-id items)) q)
+  (match-define (struct* queue ([head-id head-id]
+                                [next-id next-id]
+                                [items items]))
+    q)
   (values
    (hash-ref (queue.items q) head-id)
    (queue++ #:head-id (add1 head-id)
@@ -75,6 +83,7 @@
 
 (module+ test
   (require test-more)
+
   (test-suite
    "creating and counting"
 
@@ -121,5 +130,15 @@
    (define q3 (queue-add* (make-queue) (thingy '(j) 'purple) (thingy '(a b c) 'red)))
    (ok (queue-member? q3 3 #:key (compose1 length thingy-id) #:equal eq?)
        "(queue-member? q3 3 #:key (compose1 length thingy-id) #:equal eq?)")
+
+   (define q4 (queue-add* (make-queue)
+                          (cons 'foo (thunk 7))
+                          (cons 'bar (thunk 7))
+                          (cons 'baz (thunk 7))
+                          (cons 'jaz (thunk 7))))
+   (ok (queue-member? q4 'foo #:key car)
+       "(queue-member? q4 'foo #:key car)")
    )
+
+  (done-testing)
   )
