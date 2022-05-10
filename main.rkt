@@ -8,7 +8,9 @@
          queue-empty?
          queue-add
          queue-add*
-         queue-remove)
+         queue-remove
+         queue-member?
+         )
 
 (struct++ queue ([(head-id 0)    natural-number/c]
                  [(next-id 0)    natural-number/c]
