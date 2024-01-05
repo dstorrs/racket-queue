@@ -58,8 +58,9 @@
 
 (define/contract (queue-remove q)
   (->i ([q queue?])
-       #:pre (q) (or (hash-has-key? (queue.items q) (queue.head-id q))
-                     (raise-arguments-error 'queue-remove "tried to remove from an empty queue"))
+       #:pre (q) (or (not (queue-empty? q))
+                     (raise-arguments-error 'queue-remove
+                                            "tried to queue-remove on an empty queue"))
        (values [item  any/c]
                [new-q queue?])
        #:post (q) (<= (queue.head-id q) (queue.next-id q))
@@ -117,7 +118,18 @@
        (define-values  (elem new-q) (queue-remove q))
        (is elem correct "got the expected element")
        (loop (sub1 num) (add1 correct) new-q)))
-   )
+
+   (throws (thunk (queue-remove (make-queue)))
+           #rx"tried to queue-remove on an empty queue"
+           "throws when trying to queue-remove on empty queue")
+   
+   (lives (thunk
+           (let*-values ([(q) (make-queue)]
+                         [(q) (queue-add q 17)]
+                         [(item q) (queue-remove q)]
+                         [(q) (queue-add q 17)])
+             'ok))
+          "can add and remove items in succession"))
 
   (test-suite
    "queue-member?"
