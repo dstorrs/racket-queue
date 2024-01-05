@@ -1,6 +1,8 @@
 #lang racket/base
 
-(require struct-plus-plus racket/contract racket/match racket/format racket/function)
+(require struct-plus-plus
+         racket/require
+         (multi-in racket (contract hash format function match)))
 
 (provide make-queue
          queue?
@@ -16,7 +18,10 @@
 (struct++ queue ([(id (gensym "queue-")) symbol?]
                  [(head-id 0)            natural-number/c]
                  [(next-id 0)            natural-number/c]
-                 [(items (hash))         hash?]))
+                 [(items (hash))         hash?])
+          (#:rule ("head-id points to valid item or items are empty"
+                   #:check (head-id items) [(or (hash-empty? items)
+                                                (hash-has-key? items head-id))])))
 
 (define (make-queue) (queue++))
 
@@ -28,21 +33,23 @@
 
 (define/contract (queue-empty? q)
   (-> queue? boolean?)
-  (zero? (queue-count q)))
+  (hash-empty? (queue.items q)))
 
 ;;----------------------------------------------------------------------
 
 (define/contract (queue-add* q . items)
   (->* (queue?) () #:rest (listof any/c) queue?)
-  (for/fold ([q q])
-            ([item items])
-    (match-define (struct* queue ([head-id head-id]
-                                  [next-id next-id]
-                                  [items items]))
-      q)
-    (queue++ #:head-id head-id
-             #:next-id (add1 next-id)
-             #:items   (hash-set items next-id item))))
+  (match-define (struct* queue ([head-id head-id]
+                                [next-id next-id]
+                                [items current-items]))
+    q)
+  (define new-next-id (+ next-id (length items)))
+  (queue++ #:head-id head-id
+           #:next-id new-next-id
+           #:items (hash-union current-items
+                               (for/hash ([item items]
+                                          [idx  (in-range next-id new-next-id)])
+                                 (values idx item)))))
 
 (define (queue-add q item)
   (queue-add* q item))
