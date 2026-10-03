@@ -1,7 +1,8 @@
 #lang info
 (define collection "queue")
 (define deps '("base" "struct-plus-plus"))
-(define build-deps '("scribble-lib" "racket-doc" "rackunit-lib" "test-more"))
+(define build-deps '("sandbox-lib"
+                     "scribble-lib" "racket-doc" "rackunit-lib" "test-more"))
 (define scribblings '(("scribblings/queue.scrbl" ())))
 (define pkg-desc "A FIFO queue struct with amortized O(n) access")
 (define version "0.3")
